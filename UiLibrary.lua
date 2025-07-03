@@ -103,13 +103,9 @@ local function AddHover(element, hoverColor, normalColor)
     end)
 end
 
+-- Fixed Ripple Effect - No interference with button functionality
 local function AddRipple(element)
-    local isProcessing = false
-    
     element.MouseButton1Click:Connect(function()
-        if isProcessing then return end
-        isProcessing = true
-        
         local ripple = Instance.new("Frame")
         ripple.Size = UDim2.new(0, 0, 0, 0)
         ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -117,6 +113,7 @@ local function AddRipple(element)
         ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         ripple.BackgroundTransparency = 0.8
         ripple.BorderSizePixel = 0
+        ripple.ZIndex = element.ZIndex + 1
         ripple.Parent = element
         CreateCorner(ripple, 50)
         
@@ -126,22 +123,7 @@ local function AddRipple(element)
             BackgroundTransparency = 1
         }):Play()
         
-        -- Quick button press animation
-        local originalSize = element.Size
-        TweenService:Create(element, TweenInfo.new(0.05, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(originalSize.X.Scale * 0.98, originalSize.X.Offset * 0.98, originalSize.Y.Scale * 0.98, originalSize.Y.Offset * 0.98)
-        }):Play()
-        
-        wait(0.05)
-        
-        TweenService:Create(element, TweenInfo.new(0.1, Enum.EasingStyle.Back), {
-            Size = originalSize
-        }):Play()
-        
         game:GetService("Debris"):AddItem(ripple, 0.4)
-        
-        wait(0.1)
-        isProcessing = false
     end)
 end
 
@@ -401,11 +383,9 @@ function UiLibrary.CreateWindow(title, size)
         end
     end)
     
-    -- Entrance animation - Start visible
-    self.MainFrame.Size = UDim2.new(0, 0, 0, 0)
-    TweenService:Create(self.MainFrame, TweenInfo.new(Anim.Speed * 2, Enum.EasingStyle.Back), {
-        Size = size or UDim2.new(0, 380, 0, 280)
-    }):Play()
+    -- Fixed: Start with full size (no entrance animation delay)
+    self.MainFrame.Size = size or UDim2.new(0, 380, 0, 280)
+    self.MainFrame.BackgroundTransparency = 0
     
     self.Tabs = {}
     self.CurrentTab = nil
@@ -439,6 +419,7 @@ function Window:CreateTab(name, icon)
     -- Tab Content
     tab.TabContent = Instance.new("ScrollingFrame")
     tab.TabContent.Size = UDim2.new(1, 0, 1, 0)
+    tab.TabContent.Position = UDim2.new(0, 0, 0, 0)
     tab.TabContent.BackgroundTransparency = 1
     tab.TabContent.BorderSizePixel = 0
     tab.TabContent.ScrollBarThickness = 3
@@ -455,36 +436,22 @@ function Window:CreateTab(name, icon)
         tab.TabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 8)
     end)
     
-    -- Tab switching with improved animations
+    -- Fixed Tab switching - No animations that interfere
     tab.TabButton.MouseButton1Click:Connect(function()
         -- Don't switch if already active
         if self.CurrentTab == tab then return end
         
-        -- Hide all tabs with fade out
+        -- Hide all tabs instantly
         for _, existingTab in pairs(self.Tabs) do
-            if existingTab.TabContent.Visible then
-                TweenService:Create(existingTab.TabContent, TweenInfo.new(0.1, Anim.Style), {
-                    Position = UDim2.new(0, -20, 0, 0),
-                    BackgroundTransparency = 1
-                }):Play()
-                
-                wait(0.1)
-                existingTab.TabContent.Visible = false
-            end
-            
+            existingTab.TabContent.Visible = false
             existingTab.TabButton.BackgroundColor3 = Theme.Accent
             existingTab.TabButton.TextColor3 = Theme.TextSecondary
         end
         
-        -- Show current tab with slide in
+        -- Show current tab instantly
         tab.TabContent.Visible = true
-        tab.TabContent.Position = UDim2.new(0, 20, 0, 0)
-        tab.TabContent.BackgroundTransparency = 1
-        
-        TweenService:Create(tab.TabContent, TweenInfo.new(Anim.Speed, Anim.Style), {
-            Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 0
-        }):Play()
+        tab.TabContent.Position = UDim2.new(0, 0, 0, 0)
+        tab.TabContent.BackgroundTransparency = 0
         
         tab.TabButton.BackgroundColor3 = Theme.Primary
         tab.TabButton.TextColor3 = Theme.Text
@@ -588,24 +555,24 @@ function Tab:CreateScriptButton(scriptData)
     CreateCorner(runBtn, 6)
     AddHover(runBtn, Color3.fromRGB(80, 200, 150))
     
-    local isExecuting = false
-    
+    -- Fixed: Simplified execution without interference
     runBtn.MouseButton1Click:Connect(function()
-        if isExecuting then return end
-        isExecuting = true
+        -- Immediate visual feedback
+        local originalText = runBtn.Text
+        local originalColor = runBtn.BackgroundColor3
         
-        -- Visual feedback
         runBtn.Text = "⏳"
         runBtn.BackgroundColor3 = Theme.Warning
         
         UiLibrary.Log("Executing " .. scriptData.name .. "...", "warning")
         
+        -- Execute script
         spawn(function()
             local success, error = pcall(function()
                 loadstring(scriptData.code)()
             end)
             
-            wait(0.5) -- Minimum execution time for visual feedback
+            wait(0.3) -- Brief feedback time
             
             if success then
                 UiLibrary.Log(scriptData.name .. " executed successfully!", "success")
@@ -617,10 +584,11 @@ function Tab:CreateScriptButton(scriptData)
                 runBtn.BackgroundColor3 = Theme.Error
             end
             
-            wait(1)
-            runBtn.Text = "▶"
-            runBtn.BackgroundColor3 = Theme.Success
-            isExecuting = false
+            wait(1.5) -- Show result
+            
+            -- Reset button
+            runBtn.Text = originalText
+            runBtn.BackgroundColor3 = originalColor
         end)
     end)
     
@@ -776,11 +744,8 @@ function UiLibrary.CreateExampleWindow()
     return Window
 end
 
--- Auto-initialize the GUI
-spawn(function()
-    wait(0.1) -- Small delay to ensure everything loads
-    UiLibrary.CreateExampleWindow()
-    UiLibrary.Log("OwlHub UI Library loaded", "success")
-end)
+-- Fixed: Auto-initialize immediately without delay
+UiLibrary.CreateExampleWindow()
+UiLibrary.Log("OwlHub UI Library loaded", "success")
 
 return UiLibrary
