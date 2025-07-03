@@ -1,4 +1,4 @@
--- Compact OwlHub-Style GUI with Console, Uptime & Reactive Design
+-- Compact OwlHub-Style GUI with Script Library & Enhanced UI
 -- Place this in StarterPlayer > StarterPlayerScripts or auto-execute
 
 local Players = game:GetService("Players")
@@ -27,7 +27,8 @@ local Theme = {
     Warning = Color3.fromRGB(250, 166, 26),
     Error = Color3.fromRGB(237, 66, 69),
     Border = Color3.fromRGB(35, 35, 45),
-    Console = Color3.fromRGB(8, 8, 12)
+    Console = Color3.fromRGB(8, 8, 12),
+    Script = Color3.fromRGB(139, 69, 255)
 }
 
 -- Animation Settings
@@ -41,6 +42,30 @@ local Anim = {
 local StartTime = tick()
 local ConsoleLines = {}
 local MaxConsoleLines = 50
+
+-- Script Library
+local ScriptLibrary = {
+    {
+        name = "Infinite Yield",
+        description = "Advanced admin commands",
+        icon = "⚡",
+        code = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()'
+    },
+    {
+        name = "Hydroxide",
+        description = "Remote spy & debugging",
+        icon = "🔍",
+        code = [[local owner = "Upbolt"
+local branch = "revision"
+
+local function webImport(file)
+    return loadstring(game:HttpGetAsync(("https://raw.githubusercontent.com/%s/Hydroxide/%s/%s.lua"):format(owner, branch, file)), file .. '.lua')()
+end
+
+webImport("init")
+webImport("ui/main")]]
+    }
+}
 
 -- Utility Functions
 local function CreateCorner(parent, radius)
@@ -67,13 +92,15 @@ local function AddHover(element, hoverColor, normalColor)
     
     element.MouseEnter:Connect(function()
         TweenService:Create(element, TweenInfo.new(0.1, Anim.Style), {
-            BackgroundColor3 = hover
+            BackgroundColor3 = hover,
+            Size = UDim2.new(element.Size.X.Scale, element.Size.X.Offset, element.Size.Y.Scale, element.Size.Y.Offset + 2)
         }):Play()
     end)
     
     element.MouseLeave:Connect(function()
         TweenService:Create(element, TweenInfo.new(0.1, Anim.Style), {
-            BackgroundColor3 = normal
+            BackgroundColor3 = normal,
+            Size = UDim2.new(element.Size.X.Scale, element.Size.X.Offset, element.Size.Y.Scale, element.Size.Y.Offset - 2)
         }):Play()
     end)
 end
@@ -97,6 +124,17 @@ local function AddRipple(element)
         }):Play()
         
         game:GetService("Debris"):AddItem(ripple, 0.4)
+        
+        -- Button press animation
+        TweenService:Create(element, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(element.Size.X.Scale * 0.95, 0, element.Size.Y.Scale * 0.95, 0)
+        }):Play()
+        
+        wait(0.1)
+        
+        TweenService:Create(element, TweenInfo.new(0.1, Enum.EasingStyle.Back), {
+            Size = UDim2.new(element.Size.X.Scale / 0.95, 0, element.Size.Y.Scale / 0.95, 0)
+        }):Play()
     end)
 end
 
@@ -146,19 +184,19 @@ function UiLibrary.UpdateConsole()
     
     for i, entry in pairs(ConsoleLines) do
         local line = Instance.new("TextLabel")
-        line.Size = UDim2.new(1, -10, 0, 16)
-        line.Position = UDim2.new(0, 5, 0, (i-1) * 16)
+        line.Size = UDim2.new(1, -10, 0, 14)
+        line.Position = UDim2.new(0, 5, 0, (i-1) * 14)
         line.BackgroundTransparency = 1
         line.Text = entry.text
         line.TextColor3 = entry.color
-        line.TextSize = 10
+        line.TextSize = 9
         line.Font = Enum.Font.RobotoMono
         line.TextXAlignment = Enum.TextXAlignment.Left
         line.TextYAlignment = Enum.TextYAlignment.Top
         line.Parent = UiLibrary.ConsoleFrame
     end
     
-    UiLibrary.ConsoleFrame.CanvasSize = UDim2.new(0, 0, 0, #ConsoleLines * 16)
+    UiLibrary.ConsoleFrame.CanvasSize = UDim2.new(0, 0, 0, #ConsoleLines * 14)
     UiLibrary.ConsoleFrame.CanvasPosition = Vector2.new(0, UiLibrary.ConsoleFrame.CanvasSize.Y.Offset)
 end
 
@@ -184,10 +222,10 @@ function UiLibrary.CreateWindow(title, size)
     self.ScreenGui.ResetOnSpawn = false
     self.ScreenGui.Parent = PlayerGui
     
-    -- Main Frame (Compact Size)
+    -- Main Frame (Even More Compact)
     self.MainFrame = Instance.new("Frame")
-    self.MainFrame.Size = size or UDim2.new(0, 420, 0, 320)
-    self.MainFrame.Position = UDim2.new(0.5, -210, 0.5, -160)
+    self.MainFrame.Size = size or UDim2.new(0, 380, 0, 280)
+    self.MainFrame.Position = UDim2.new(0.5, -190, 0.5, -140)
     self.MainFrame.BackgroundColor3 = Theme.Background
     self.MainFrame.BorderSizePixel = 0
     self.MainFrame.ClipsDescendants = true
@@ -199,7 +237,7 @@ function UiLibrary.CreateWindow(title, size)
     
     -- Title Bar
     self.TitleBar = Instance.new("Frame")
-    self.TitleBar.Size = UDim2.new(1, 0, 0, 35)
+    self.TitleBar.Size = UDim2.new(1, 0, 0, 32)
     self.TitleBar.BackgroundColor3 = Theme.Secondary
     self.TitleBar.BorderSizePixel = 0
     self.TitleBar.Parent = self.MainFrame
@@ -214,47 +252,47 @@ function UiLibrary.CreateWindow(title, size)
     
     -- Logo
     local logo = Instance.new("TextLabel")
-    logo.Size = UDim2.new(0, 30, 0, 25)
-    logo.Position = UDim2.new(0, 8, 0, 5)
+    logo.Size = UDim2.new(0, 28, 0, 22)
+    logo.Position = UDim2.new(0, 6, 0, 5)
     logo.BackgroundTransparency = 1
     logo.Text = "🦉"
     logo.TextColor3 = Theme.Text
-    logo.TextSize = 16
+    logo.TextSize = 14
     logo.Font = Enum.Font.GothamBold
     logo.Parent = self.TitleBar
     
     -- Title
     self.TitleLabel = Instance.new("TextLabel")
-    self.TitleLabel.Size = UDim2.new(0, 150, 1, 0)
-    self.TitleLabel.Position = UDim2.new(0, 40, 0, 0)
+    self.TitleLabel.Size = UDim2.new(0, 120, 1, 0)
+    self.TitleLabel.Position = UDim2.new(0, 36, 0, 0)
     self.TitleLabel.BackgroundTransparency = 1
     self.TitleLabel.Text = title or "OwlHub"
     self.TitleLabel.TextColor3 = Theme.Text
-    self.TitleLabel.TextSize = 14
+    self.TitleLabel.TextSize = 12
     self.TitleLabel.Font = Enum.Font.GothamBold
     self.TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     self.TitleLabel.Parent = self.TitleBar
     
     -- Uptime Display
     self.UptimeLabel = Instance.new("TextLabel")
-    self.UptimeLabel.Size = UDim2.new(0, 80, 1, 0)
-    self.UptimeLabel.Position = UDim2.new(1, -150, 0, 0)
+    self.UptimeLabel.Size = UDim2.new(0, 70, 1, 0)
+    self.UptimeLabel.Position = UDim2.new(1, -130, 0, 0)
     self.UptimeLabel.BackgroundTransparency = 1
     self.UptimeLabel.Text = "⏱ " .. GetUptime()
     self.UptimeLabel.TextColor3 = Theme.TextSecondary
-    self.UptimeLabel.TextSize = 10
+    self.UptimeLabel.TextSize = 9
     self.UptimeLabel.Font = Enum.Font.Gotham
     self.UptimeLabel.Parent = self.TitleBar
     
     -- Close Button
     local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 25, 0, 25)
-    closeBtn.Position = UDim2.new(1, -30, 0, 5)
+    closeBtn.Size = UDim2.new(0, 22, 0, 22)
+    closeBtn.Position = UDim2.new(1, -27, 0, 5)
     closeBtn.BackgroundColor3 = Theme.Error
     closeBtn.BorderSizePixel = 0
     closeBtn.Text = "×"
     closeBtn.TextColor3 = Theme.Text
-    closeBtn.TextSize = 14
+    closeBtn.TextSize = 12
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.Parent = self.TitleBar
     CreateCorner(closeBtn, 6)
@@ -272,8 +310,8 @@ function UiLibrary.CreateWindow(title, size)
     
     -- Tab Container
     self.TabContainer = Instance.new("Frame")
-    self.TabContainer.Size = UDim2.new(1, -10, 0, 30)
-    self.TabContainer.Position = UDim2.new(0, 5, 0, 40)
+    self.TabContainer.Size = UDim2.new(1, -8, 0, 28)
+    self.TabContainer.Position = UDim2.new(0, 4, 0, 36)
     self.TabContainer.BackgroundTransparency = 1
     self.TabContainer.Parent = self.MainFrame
     
@@ -284,37 +322,37 @@ function UiLibrary.CreateWindow(title, size)
     
     -- Content Frame
     self.ContentFrame = Instance.new("Frame")
-    self.ContentFrame.Size = UDim2.new(1, -10, 1, -140)
-    self.ContentFrame.Position = UDim2.new(0, 5, 0, 75)
+    self.ContentFrame.Size = UDim2.new(1, -8, 1, -110)
+    self.ContentFrame.Position = UDim2.new(0, 4, 0, 68)
     self.ContentFrame.BackgroundTransparency = 1
     self.ContentFrame.Parent = self.MainFrame
     
     -- Console Frame
     self.ConsoleContainer = Instance.new("Frame")
-    self.ConsoleContainer.Size = UDim2.new(1, -10, 0, 60)
-    self.ConsoleContainer.Position = UDim2.new(0, 5, 1, -65)
+    self.ConsoleContainer.Size = UDim2.new(1, -8, 0, 45)
+    self.ConsoleContainer.Position = UDim2.new(0, 4, 1, -49)
     self.ConsoleContainer.BackgroundColor3 = Theme.Console
     self.ConsoleContainer.BorderSizePixel = 0
     self.ConsoleContainer.Parent = self.MainFrame
-    CreateCorner(self.ConsoleContainer, 8)
+    CreateCorner(self.ConsoleContainer, 6)
     
     local consoleTitle = Instance.new("TextLabel")
-    consoleTitle.Size = UDim2.new(1, -10, 0, 15)
-    consoleTitle.Position = UDim2.new(0, 5, 0, 2)
+    consoleTitle.Size = UDim2.new(1, -8, 0, 12)
+    consoleTitle.Position = UDim2.new(0, 4, 0, 2)
     consoleTitle.BackgroundTransparency = 1
     consoleTitle.Text = "📟 Console"
     consoleTitle.TextColor3 = Theme.TextSecondary
-    consoleTitle.TextSize = 10
+    consoleTitle.TextSize = 9
     consoleTitle.Font = Enum.Font.GothamBold
     consoleTitle.TextXAlignment = Enum.TextXAlignment.Left
     consoleTitle.Parent = self.ConsoleContainer
     
     UiLibrary.ConsoleFrame = Instance.new("ScrollingFrame")
-    UiLibrary.ConsoleFrame.Size = UDim2.new(1, -10, 1, -20)
-    UiLibrary.ConsoleFrame.Position = UDim2.new(0, 5, 0, 17)
+    UiLibrary.ConsoleFrame.Size = UDim2.new(1, -8, 1, -16)
+    UiLibrary.ConsoleFrame.Position = UDim2.new(0, 4, 0, 14)
     UiLibrary.ConsoleFrame.BackgroundTransparency = 1
     UiLibrary.ConsoleFrame.BorderSizePixel = 0
-    UiLibrary.ConsoleFrame.ScrollBarThickness = 3
+    UiLibrary.ConsoleFrame.ScrollBarThickness = 2
     UiLibrary.ConsoleFrame.ScrollBarImageColor3 = Theme.Primary
     UiLibrary.ConsoleFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     UiLibrary.ConsoleFrame.Parent = self.ConsoleContainer
@@ -359,7 +397,7 @@ function UiLibrary.CreateWindow(title, size)
     -- Entrance animation
     self.MainFrame.Size = UDim2.new(0, 0, 0, 0)
     TweenService:Create(self.MainFrame, TweenInfo.new(Anim.Speed * 2, Enum.EasingStyle.Back), {
-        Size = size or UDim2.new(0, 420, 0, 320)
+        Size = size or UDim2.new(0, 380, 0, 280)
     }):Play()
     
     self.Tabs = {}
@@ -378,15 +416,15 @@ Tab.__index = Tab
 function Window:CreateTab(name, icon)
     local tab = setmetatable({}, Tab)
     
-    -- Tab Button
+    -- Tab Button (Bigger)
     tab.TabButton = Instance.new("TextButton")
-    tab.TabButton.Size = UDim2.new(0, 80, 1, 0)
+    tab.TabButton.Size = UDim2.new(0, 90, 1, 0)
     tab.TabButton.BackgroundColor3 = Theme.Accent
     tab.TabButton.BorderSizePixel = 0
     tab.TabButton.Text = (icon or "📄") .. " " .. name
     tab.TabButton.TextColor3 = Theme.TextSecondary
     tab.TabButton.TextSize = 10
-    tab.TabButton.Font = Enum.Font.Gotham
+    tab.TabButton.Font = Enum.Font.GothamSemibold
     tab.TabButton.Parent = self.TabContainer
     CreateCorner(tab.TabButton, 6)
     AddRipple(tab.TabButton)
@@ -396,18 +434,18 @@ function Window:CreateTab(name, icon)
     tab.TabContent.Size = UDim2.new(1, 0, 1, 0)
     tab.TabContent.BackgroundTransparency = 1
     tab.TabContent.BorderSizePixel = 0
-    tab.TabContent.ScrollBarThickness = 4
+    tab.TabContent.ScrollBarThickness = 3
     tab.TabContent.ScrollBarImageColor3 = Theme.Primary
     tab.TabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
     tab.TabContent.Visible = false
     tab.TabContent.Parent = self.ContentFrame
     
     local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 5)
+    layout.Padding = UDim.new(0, 4)
     layout.Parent = tab.TabContent
     
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        tab.TabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+        tab.TabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 8)
     end)
     
     -- Tab switching
@@ -423,7 +461,7 @@ function Window:CreateTab(name, icon)
         tab.TabButton.TextColor3 = Theme.Text
         
         -- Slide animation
-        tab.TabContent.Position = UDim2.new(0, 10, 0, 0)
+        tab.TabContent.Position = UDim2.new(0, 8, 0, 0)
         TweenService:Create(tab.TabContent, TweenInfo.new(Anim.Speed, Anim.Style), {
             Position = UDim2.new(0, 0, 0, 0)
         }):Play()
@@ -445,18 +483,18 @@ function Window:CreateTab(name, icon)
     return tab
 end
 
--- UI Elements
+-- UI Elements (Bigger & More Prominent)
 function Tab:CreateButton(text, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -5, 0, 30)
+    btn.Size = UDim2.new(1, -4, 0, 35) -- Bigger buttons
     btn.BackgroundColor3 = Theme.Primary
     btn.BorderSizePixel = 0
     btn.Text = text
     btn.TextColor3 = Theme.Text
-    btn.TextSize = 12
-    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 13 -- Bigger text
+    btn.Font = Enum.Font.GothamBold
     btn.Parent = self.TabContent
-    CreateCorner(btn, 6)
+    CreateCorner(btn, 8)
     CreateGradient(btn)
     AddHover(btn)
     AddRipple(btn)
@@ -469,41 +507,117 @@ function Tab:CreateButton(text, callback)
     return btn
 end
 
-function Tab:CreateToggle(text, default, callback)
+function Tab:CreateScriptButton(scriptData)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -5, 0, 35)
+    frame.Size = UDim2.new(1, -4, 0, 50) -- Even bigger for scripts
     frame.BackgroundColor3 = Theme.Secondary
     frame.BorderSizePixel = 0
     frame.Parent = self.TabContent
-    CreateCorner(frame, 6)
+    CreateCorner(frame, 8)
+    
+    local gradient = CreateGradient(frame, Theme.Script, Theme.Primary, 45)
+    gradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 0.8),
+        NumberSequenceKeypoint.new(1, 0.9)
+    }
+    
+    local icon = Instance.new("TextLabel")
+    icon.Size = UDim2.new(0, 40, 1, 0)
+    icon.BackgroundTransparency = 1
+    icon.Text = scriptData.icon
+    icon.TextColor3 = Theme.Text
+    icon.TextSize = 20
+    icon.Font = Enum.Font.GothamBold
+    icon.Parent = frame
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, -90, 0, 20)
+    nameLabel.Position = UDim2.new(0, 45, 0, 5)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = scriptData.name
+    nameLabel.TextColor3 = Theme.Text
+    nameLabel.TextSize = 12
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.Parent = frame
+    
+    local descLabel = Instance.new("TextLabel")
+    descLabel.Size = UDim2.new(1, -90, 0, 15)
+    descLabel.Position = UDim2.new(0, 45, 0, 25)
+    descLabel.BackgroundTransparency = 1
+    descLabel.Text = scriptData.description
+    descLabel.TextColor3 = Theme.TextSecondary
+    descLabel.TextSize = 9
+    descLabel.Font = Enum.Font.Gotham
+    descLabel.TextXAlignment = Enum.TextXAlignment.Left
+    descLabel.Parent = frame
+    
+    local runBtn = Instance.new("TextButton")
+    runBtn.Size = UDim2.new(0, 35, 0, 25)
+    runBtn.Position = UDim2.new(1, -40, 0.5, -12)
+    runBtn.BackgroundColor3 = Theme.Success
+    runBtn.BorderSizePixel = 0
+    runBtn.Text = "▶"
+    runBtn.TextColor3 = Theme.Text
+    runBtn.TextSize = 12
+    runBtn.Font = Enum.Font.GothamBold
+    runBtn.Parent = frame
+    CreateCorner(runBtn, 6)
+    AddHover(runBtn, Color3.fromRGB(80, 200, 150))
+    AddRipple(runBtn)
+    
+    runBtn.MouseButton1Click:Connect(function()
+        UiLibrary.Log("Executing " .. scriptData.name .. "...", "warning")
+        
+        local success, error = pcall(function()
+            loadstring(scriptData.code)()
+        end)
+        
+        if success then
+            UiLibrary.Log(scriptData.name .. " executed successfully!", "success")
+        else
+            UiLibrary.Log("Error executing " .. scriptData.name .. ": " .. tostring(error), "error")
+        end
+    end)
+    
+    return frame
+end
+
+function Tab:CreateToggle(text, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -4, 0, 38) -- Bigger toggles
+    frame.BackgroundColor3 = Theme.Secondary
+    frame.BorderSizePixel = 0
+    frame.Parent = self.TabContent
+    CreateCorner(frame, 8)
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(0.65, 0, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Theme.Text
-    label.TextSize = 11
-    label.Font = Enum.Font.Gotham
+    label.TextSize = 12 -- Bigger text
+    label.Font = Enum.Font.GothamSemibold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 40, 0, 18)
-    toggle.Position = UDim2.new(1, -45, 0.5, -9)
+    toggle.Size = UDim2.new(0, 45, 0, 20) -- Bigger toggle
+    toggle.Position = UDim2.new(1, -50, 0.5, -10)
     toggle.BackgroundColor3 = default and Theme.Success or Theme.Accent
     toggle.BorderSizePixel = 0
     toggle.Text = ""
     toggle.Parent = frame
-    CreateCorner(toggle, 9)
+    CreateCorner(toggle, 10)
     
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 14, 0, 14)
-    knob.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
     knob.BackgroundColor3 = Theme.Text
     knob.BorderSizePixel = 0
     knob.Parent = toggle
-    CreateCorner(knob, 7)
+    CreateCorner(knob, 8)
     
     local state = default or false
     
@@ -515,7 +629,7 @@ function Tab:CreateToggle(text, default, callback)
         }):Play()
         
         TweenService:Create(knob, TweenInfo.new(0.2, Enum.EasingStyle.Back), {
-            Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+            Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
         }):Play()
         
         if callback then callback(state) end
@@ -526,116 +640,36 @@ function Tab:CreateToggle(text, default, callback)
         Set = function(newState)
             state = newState
             toggle.BackgroundColor3 = state and Theme.Success or Theme.Accent
-            knob.Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-        end
-    }
-end
-
-function Tab:CreateSlider(text, min, max, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -5, 0, 45)
-    frame.BackgroundColor3 = Theme.Secondary
-    frame.BorderSizePixel = 0
-    frame.Parent = self.TabContent
-    CreateCorner(frame, 6)
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 20)
-    label.Position = UDim2.new(0, 5, 0, 2)
-    label.BackgroundTransparency = 1
-    label.Text = text .. ": " .. (default or min)
-    label.TextColor3 = Theme.Text
-    label.TextSize = 11
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-    
-    local track = Instance.new("Frame")
-    track.Size = UDim2.new(1, -20, 0, 4)
-    track.Position = UDim2.new(0, 10, 1, -15)
-    track.BackgroundColor3 = Theme.Accent
-    track.BorderSizePixel = 0
-    track.Parent = frame
-    CreateCorner(track, 2)
-    
-    local fill = Instance.new("Frame")
-    fill.Size = UDim2.new((default or min) / max, 0, 1, 0)
-    fill.BackgroundColor3 = Theme.Primary
-    fill.BorderSizePixel = 0
-    fill.Parent = track
-    CreateCorner(fill, 2)
-    CreateGradient(fill)
-    
-    local knob = Instance.new("TextButton")
-    knob.Size = UDim2.new(0, 12, 0, 12)
-    knob.Position = UDim2.new((default or min) / max, -6, 0.5, -6)
-    knob.BackgroundColor3 = Theme.Text
-    knob.BorderSizePixel = 0
-    knob.Text = ""
-    knob.Parent = track
-    CreateCorner(knob, 6)
-    
-    local dragging = false
-    local currentValue = default or min
-    
-    knob.MouseButton1Down:Connect(function() dragging = true end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local mousePos = input.Position.X
-            local trackPos = track.AbsolutePosition.X
-            local trackSize = track.AbsoluteSize.X
-            local percentage = math.clamp((mousePos - trackPos) / trackSize, 0, 1)
-            
-            currentValue = math.floor(min + (max - min) * percentage)
-            
-            fill.Size = UDim2.new(percentage, 0, 1, 0)
-            knob.Position = UDim2.new(percentage, -6, 0.5, -6)
-            label.Text = text .. ": " .. currentValue
-            
-            if callback then callback(currentValue) end
-        end
-    end)
-    
-    return {
-        Set = function(value)
-            currentValue = math.clamp(value, min, max)
-            local percentage = (currentValue - min) / (max - min)
-            fill.Size = UDim2.new(percentage, 0, 1, 0)
-            knob.Position = UDim2.new(percentage, -6, 0.5, -6)
-            label.Text = text .. ": " .. currentValue
+            knob.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
         end
     }
 end
 
 function Tab:CreateInput(placeholder, callback)
     local input = Instance.new("TextBox")
-    input.Size = UDim2.new(1, -5, 0, 30)
+    input.Size = UDim2.new(1, -4, 0, 32) -- Bigger input
     input.BackgroundColor3 = Theme.Secondary
     input.BorderSizePixel = 0
     input.PlaceholderText = placeholder
     input.Text = ""
     input.TextColor3 = Theme.Text
     input.PlaceholderColor3 = Theme.TextMuted
-    input.TextSize = 11
+    input.TextSize = 12 -- Bigger text
     input.Font = Enum.Font.Gotham
     input.Parent = self.TabContent
-    CreateCorner(input, 6)
+    CreateCorner(input, 8)
     
     input.Focused:Connect(function()
         TweenService:Create(input, TweenInfo.new(0.1, Anim.Style), {
-            BackgroundColor3 = Theme.Accent
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(1, -2, 0, 34)
         }):Play()
     end)
     
     input.FocusLost:Connect(function()
         TweenService:Create(input, TweenInfo.new(0.1, Anim.Style), {
-            BackgroundColor3 = Theme.Secondary
+            BackgroundColor3 = Theme.Secondary,
+            Size = UDim2.new(1, -4, 0, 32)
         }):Play()
         if callback then callback(input.Text) end
         UiLibrary.Log("Input: " .. input.Text)
@@ -646,7 +680,7 @@ end
 
 function Tab:CreateLabel(text)
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -5, 0, 25)
+    label.Size = UDim2.new(1, -4, 0, 28) -- Bigger labels
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Theme.TextSecondary
@@ -656,6 +690,46 @@ function Tab:CreateLabel(text)
     label.Parent = self.TabContent
     
     return label
+end
+
+-- Example Usage Function
+function UiLibrary.CreateExampleWindow()
+    local Window = UiLibrary.CreateWindow("OwlHub Pro")
+    
+    -- Main Tab
+    local MainTab = Window:CreateTab("Main", "🏠")
+    MainTab:CreateLabel("🎯 Main Features")
+    MainTab:CreateButton("Test Feature", function()
+        UiLibrary.Log("Test feature activated!", "success")
+    end)
+    MainTab:CreateToggle("Auto Farm", false, function(state)
+        UiLibrary.Log("Auto Farm: " .. tostring(state), state and "success" or "warning")
+    end)
+    MainTab:CreateInput("Enter value...", function(text)
+        UiLibrary.Log("Input received: " .. text)
+    end)
+    
+    -- Script Library Tab
+    local ScriptTab = Window:CreateTab("Scripts", "📜")
+    ScriptTab:CreateLabel("🚀 Script Library")
+    
+    for _, script in pairs(ScriptLibrary) do
+        ScriptTab:CreateScriptButton(script)
+    end
+    
+    -- Settings Tab
+    local SettingsTab = Window:CreateTab("Settings", "⚙️")
+    SettingsTab:CreateLabel("🔧 Configuration")
+    SettingsTab:CreateToggle("Auto Execute", false, function(state)
+        UiLibrary.Log("Auto Execute: " .. tostring(state))
+    end)
+    SettingsTab:CreateButton("Clear Console", function()
+        ConsoleLines = {}
+        UiLibrary.UpdateConsole()
+        UiLibrary.Log("Console cleared", "success")
+    end)
+    
+    return Window
 end
 
 -- Initialize
