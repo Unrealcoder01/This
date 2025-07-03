@@ -10,6 +10,11 @@ local HttpService = game:GetService("HttpService")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
+-- Prevent multiple instances
+if PlayerGui:FindFirstChild("TestHub_GUI") then
+    PlayerGui:FindFirstChild("TestHub_GUI"):Destroy()
+end
+
 -- Enhanced OwlHub UI Library
 local UiLibrary = {}
 
@@ -246,10 +251,11 @@ Window.__index = Window
 function UiLibrary.CreateWindow(title, size)
     local self = setmetatable({}, Window)
     
-    -- Create ScreenGui
+    -- Create ScreenGui with unique name
     self.ScreenGui = Instance.new("ScreenGui")
-    self.ScreenGui.Name = "TestHub_" .. HttpService:GenerateGUID(false):sub(1, 6)
+    self.ScreenGui.Name = "TestHub_GUI"
     self.ScreenGui.ResetOnSpawn = false
+    self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent = PlayerGui
     
     -- Main Frame with enhanced styling
@@ -259,6 +265,7 @@ function UiLibrary.CreateWindow(title, size)
     self.MainFrame.BackgroundColor3 = Theme.Background
     self.MainFrame.BorderSizePixel = 0
     self.MainFrame.ClipsDescendants = true
+    self.MainFrame.ZIndex = 1
     self.MainFrame.Parent = self.ScreenGui
     CreateCorner(self.MainFrame, 16)
     
@@ -284,6 +291,7 @@ function UiLibrary.CreateWindow(title, size)
     self.TitleBar.Size = UDim2.new(1, 0, 0, 40)
     self.TitleBar.BackgroundColor3 = Theme.Secondary
     self.TitleBar.BorderSizePixel = 0
+    self.TitleBar.ZIndex = 2
     self.TitleBar.Parent = self.MainFrame
     CreateCorner(self.TitleBar, 16)
     
@@ -300,6 +308,7 @@ function UiLibrary.CreateWindow(title, size)
     logoFrame.Position = UDim2.new(0, 8, 0, 4)
     logoFrame.BackgroundColor3 = Theme.Primary
     logoFrame.BorderSizePixel = 0
+    logoFrame.ZIndex = 3
     logoFrame.Parent = self.TitleBar
     CreateCorner(logoFrame, 8)
     CreateGradient(logoFrame, Theme.Primary, Theme.Script)
@@ -317,6 +326,7 @@ function UiLibrary.CreateWindow(title, size)
     logo.TextColor3 = Theme.Text
     logo.TextSize = 16
     logo.Font = Enum.Font.GothamBold
+    logo.ZIndex = 4
     logo.Parent = logoFrame
     
     -- Enhanced Title
@@ -329,6 +339,7 @@ function UiLibrary.CreateWindow(title, size)
     self.TitleLabel.TextSize = 14
     self.TitleLabel.Font = Enum.Font.GothamBold
     self.TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    self.TitleLabel.ZIndex = 3
     self.TitleLabel.Parent = self.TitleBar
     
     -- Enhanced Uptime Display
@@ -340,6 +351,7 @@ function UiLibrary.CreateWindow(title, size)
     self.UptimeLabel.TextColor3 = Theme.TextSecondary
     self.UptimeLabel.TextSize = 10
     self.UptimeLabel.Font = Enum.Font.GothamSemibold
+    self.UptimeLabel.ZIndex = 3
     self.UptimeLabel.Parent = self.TitleBar
     
     -- Enhanced Close Button
@@ -352,6 +364,7 @@ function UiLibrary.CreateWindow(title, size)
     closeBtn.TextColor3 = Theme.Text
     closeBtn.TextSize = 14
     closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.ZIndex = 3
     closeBtn.Parent = self.TitleBar
     CreateCorner(closeBtn, 8)
     AddHover(closeBtn, Color3.fromRGB(255, 80, 80), Theme.Error, true)
@@ -371,6 +384,7 @@ function UiLibrary.CreateWindow(title, size)
     self.TabContainer.Size = UDim2.new(1, -12, 0, 32)
     self.TabContainer.Position = UDim2.new(0, 6, 0, 46)
     self.TabContainer.BackgroundTransparency = 1
+    self.TabContainer.ZIndex = 2
     self.TabContainer.Parent = self.MainFrame
     
     local tabLayout = Instance.new("UIListLayout")
@@ -383,6 +397,7 @@ function UiLibrary.CreateWindow(title, size)
     self.ContentFrame.Size = UDim2.new(1, -12, 1, -90)
     self.ContentFrame.Position = UDim2.new(0, 6, 0, 84)
     self.ContentFrame.BackgroundTransparency = 1
+    self.ContentFrame.ZIndex = 2
     self.ContentFrame.Parent = self.MainFrame
     
     -- Enhanced Dragging with smooth animation
@@ -458,6 +473,7 @@ function Window:CreateTab(name, icon)
     tab.TabButton.TextColor3 = Theme.TextSecondary
     tab.TabButton.TextSize = 11
     tab.TabButton.Font = Enum.Font.GothamSemibold
+    tab.TabButton.ZIndex = 3
     tab.TabButton.Parent = self.TabContainer
     CreateCorner(tab.TabButton, 8)
     AddRipple(tab.TabButton)
@@ -479,6 +495,7 @@ function Window:CreateTab(name, icon)
     tab.TabContent.ScrollBarImageColor3 = Theme.Primary
     tab.TabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
     tab.TabContent.Visible = false
+    tab.TabContent.ZIndex = 3
     tab.TabContent.Parent = self.ContentFrame
     
     local layout = Instance.new("UIListLayout")
@@ -495,10 +512,7 @@ function Window:CreateTab(name, icon)
         
         -- Animate out current tab
         if self.CurrentTab then
-            TweenService:Create(self.CurrentTab.TabContent, TweenInfo.new(Anim.Fast, Anim.Style), {
-                Position = UDim2.new(-1, 0, 0, 0),
-                BackgroundTransparency = 1
-            }):Play()
+            self.CurrentTab.TabContent.Visible = false
             
             TweenService:Create(self.CurrentTab.TabButton, TweenInfo.new(Anim.Fast, Anim.Style), {
                 BackgroundColor3 = Theme.Accent,
@@ -511,20 +525,10 @@ function Window:CreateTab(name, icon)
                     Transparency = 1
                 }):Play()
             end
-            
-            wait(Anim.Fast)
-            self.CurrentTab.TabContent.Visible = false
         end
         
         -- Animate in new tab
         tab.TabContent.Visible = true
-        tab.TabContent.Position = UDim2.new(1, 0, 0, 0)
-        tab.TabContent.BackgroundTransparency = 1
-        
-        TweenService:Create(tab.TabContent, TweenInfo.new(Anim.Speed, Enum.EasingStyle.Back), {
-            Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 0
-        }):Play()
         
         TweenService:Create(tab.TabButton, TweenInfo.new(Anim.Speed, Anim.Style), {
             BackgroundColor3 = Theme.Primary,
@@ -563,6 +567,7 @@ function Tab:CreateButton(text, callback)
     btn.TextColor3 = Theme.Text
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
+    btn.ZIndex = 4
     btn.Parent = self.TabContent
     CreateCorner(btn, 10)
     CreateGradient(btn, Theme.Primary, Theme.Script)
@@ -589,6 +594,7 @@ function Tab:CreateScriptButton(scriptData)
     frame.Size = UDim2.new(1, -6, 0, 60)
     frame.BackgroundColor3 = Theme.Secondary
     frame.BorderSizePixel = 0
+    frame.ZIndex = 4
     frame.Parent = self.TabContent
     CreateCorner(frame, 12)
     
@@ -612,6 +618,7 @@ function Tab:CreateScriptButton(scriptData)
     icon.TextColor3 = Theme.Text
     icon.TextSize = 24
     icon.Font = Enum.Font.GothamBold
+    icon.ZIndex = 5
     icon.Parent = frame
     
     local nameLabel = Instance.new("TextLabel")
@@ -623,6 +630,7 @@ function Tab:CreateScriptButton(scriptData)
     nameLabel.TextSize = 13
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.ZIndex = 5
     nameLabel.Parent = frame
     
     local descLabel = Instance.new("TextLabel")
@@ -634,6 +642,7 @@ function Tab:CreateScriptButton(scriptData)
     descLabel.TextSize = 10
     descLabel.Font = Enum.Font.Gotham
     descLabel.TextXAlignment = Enum.TextXAlignment.Left
+    descLabel.ZIndex = 5
     descLabel.Parent = frame
     
     local runBtn = Instance.new("TextButton")
@@ -645,6 +654,7 @@ function Tab:CreateScriptButton(scriptData)
     runBtn.TextColor3 = Theme.Text
     runBtn.TextSize = 14
     runBtn.Font = Enum.Font.GothamBold
+    runBtn.ZIndex = 5
     runBtn.Parent = frame
     CreateCorner(runBtn, 8)
     AddHover(runBtn, Color3.fromRGB(80, 200, 150), Theme.Success, true)
@@ -691,6 +701,7 @@ function Tab:CreateToggle(text, default, callback)
     frame.Size = UDim2.new(1, -6, 0, 42)
     frame.BackgroundColor3 = Theme.Secondary
     frame.BorderSizePixel = 0
+    frame.ZIndex = 4
     frame.Parent = self.TabContent
     CreateCorner(frame, 10)
     
@@ -709,6 +720,7 @@ function Tab:CreateToggle(text, default, callback)
     label.TextSize = 12
     label.Font = Enum.Font.GothamSemibold
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 5
     label.Parent = frame
     
     local toggle = Instance.new("TextButton")
@@ -717,6 +729,7 @@ function Tab:CreateToggle(text, default, callback)
     toggle.BackgroundColor3 = default and Theme.Success or Theme.Accent
     toggle.BorderSizePixel = 0
     toggle.Text = ""
+    toggle.ZIndex = 5
     toggle.Parent = frame
     CreateCorner(toggle, 12)
     
@@ -725,6 +738,7 @@ function Tab:CreateToggle(text, default, callback)
     knob.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
     knob.BackgroundColor3 = Theme.Text
     knob.BorderSizePixel = 0
+    knob.ZIndex = 6
     knob.Parent = toggle
     CreateCorner(knob, 9)
     
@@ -771,6 +785,7 @@ function Tab:CreateInput(placeholder, callback)
     input.PlaceholderColor3 = Theme.TextMuted
     input.TextSize = 12
     input.Font = Enum.Font.Gotham
+    input.ZIndex = 4
     input.Parent = self.TabContent
     CreateCorner(input, 10)
     
@@ -817,6 +832,7 @@ function Tab:CreateLabel(text)
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 4
     label.Parent = self.TabContent
     
     return label
@@ -831,6 +847,7 @@ function Tab:CreateConsole()
     UiLibrary.ConsoleContent.ScrollBarThickness = 4
     UiLibrary.ConsoleContent.ScrollBarImageColor3 = Theme.Primary
     UiLibrary.ConsoleContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+    UiLibrary.ConsoleContent.ZIndex = 4
     UiLibrary.ConsoleContent.Parent = self.TabContent
     CreateCorner(UiLibrary.ConsoleContent, 10)
     
@@ -845,8 +862,8 @@ function Tab:CreateConsole()
     return UiLibrary.ConsoleContent
 end
 
--- Example Usage Function
-function UiLibrary.CreateExampleWindow()
+-- Single Instance Creation
+local function CreateSingleWindow()
     local Window = UiLibrary.CreateWindow("Test")
     
     -- Main Tab
@@ -889,8 +906,8 @@ function UiLibrary.CreateExampleWindow()
     return Window
 end
 
--- Auto-initialize
-UiLibrary.CreateExampleWindow()
+-- Auto-initialize single instance
+CreateSingleWindow()
 UiLibrary.Log("Test UI Library loaded successfully", "success")
 
 return UiLibrary
