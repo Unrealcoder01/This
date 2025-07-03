@@ -33,7 +33,7 @@ local Theme = {
 
 -- Animation Settings
 local Anim = {
-    Speed = 0.2,
+    Speed = 0.15,
     Style = Enum.EasingStyle.Quart,
     Direction = Enum.EasingDirection.Out
 }
@@ -92,21 +92,24 @@ local function AddHover(element, hoverColor, normalColor)
     
     element.MouseEnter:Connect(function()
         TweenService:Create(element, TweenInfo.new(0.1, Anim.Style), {
-            BackgroundColor3 = hover,
-            Size = UDim2.new(element.Size.X.Scale, element.Size.X.Offset, element.Size.Y.Scale, element.Size.Y.Offset + 2)
+            BackgroundColor3 = hover
         }):Play()
     end)
     
     element.MouseLeave:Connect(function()
         TweenService:Create(element, TweenInfo.new(0.1, Anim.Style), {
-            BackgroundColor3 = normal,
-            Size = UDim2.new(element.Size.X.Scale, element.Size.X.Offset, element.Size.Y.Scale, element.Size.Y.Offset - 2)
+            BackgroundColor3 = normal
         }):Play()
     end)
 end
 
 local function AddRipple(element)
+    local isProcessing = false
+    
     element.MouseButton1Click:Connect(function()
+        if isProcessing then return end
+        isProcessing = true
+        
         local ripple = Instance.new("Frame")
         ripple.Size = UDim2.new(0, 0, 0, 0)
         ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -123,18 +126,22 @@ local function AddRipple(element)
             BackgroundTransparency = 1
         }):Play()
         
-        game:GetService("Debris"):AddItem(ripple, 0.4)
-        
-        -- Button press animation
-        TweenService:Create(element, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(element.Size.X.Scale * 0.95, 0, element.Size.Y.Scale * 0.95, 0)
+        -- Quick button press animation
+        local originalSize = element.Size
+        TweenService:Create(element, TweenInfo.new(0.05, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(originalSize.X.Scale * 0.98, originalSize.X.Offset * 0.98, originalSize.Y.Scale * 0.98, originalSize.Y.Offset * 0.98)
         }):Play()
         
-        wait(0.1)
+        wait(0.05)
         
         TweenService:Create(element, TweenInfo.new(0.1, Enum.EasingStyle.Back), {
-            Size = UDim2.new(element.Size.X.Scale / 0.95, 0, element.Size.Y.Scale / 0.95, 0)
+            Size = originalSize
         }):Play()
+        
+        game:GetService("Debris"):AddItem(ripple, 0.4)
+        
+        wait(0.1)
+        isProcessing = false
     end)
 end
 
@@ -394,7 +401,7 @@ function UiLibrary.CreateWindow(title, size)
         end
     end)
     
-    -- Entrance animation
+    -- Entrance animation - Start visible
     self.MainFrame.Size = UDim2.new(0, 0, 0, 0)
     TweenService:Create(self.MainFrame, TweenInfo.new(Anim.Speed * 2, Enum.EasingStyle.Back), {
         Size = size or UDim2.new(0, 380, 0, 280)
@@ -448,23 +455,39 @@ function Window:CreateTab(name, icon)
         tab.TabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 8)
     end)
     
-    -- Tab switching
+    -- Tab switching with improved animations
     tab.TabButton.MouseButton1Click:Connect(function()
+        -- Don't switch if already active
+        if self.CurrentTab == tab then return end
+        
+        -- Hide all tabs with fade out
         for _, existingTab in pairs(self.Tabs) do
-            existingTab.TabContent.Visible = false
+            if existingTab.TabContent.Visible then
+                TweenService:Create(existingTab.TabContent, TweenInfo.new(0.1, Anim.Style), {
+                    Position = UDim2.new(0, -20, 0, 0),
+                    BackgroundTransparency = 1
+                }):Play()
+                
+                wait(0.1)
+                existingTab.TabContent.Visible = false
+            end
+            
             existingTab.TabButton.BackgroundColor3 = Theme.Accent
             existingTab.TabButton.TextColor3 = Theme.TextSecondary
         end
         
+        -- Show current tab with slide in
         tab.TabContent.Visible = true
+        tab.TabContent.Position = UDim2.new(0, 20, 0, 0)
+        tab.TabContent.BackgroundTransparency = 1
+        
+        TweenService:Create(tab.TabContent, TweenInfo.new(Anim.Speed, Anim.Style), {
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 0
+        }):Play()
+        
         tab.TabButton.BackgroundColor3 = Theme.Primary
         tab.TabButton.TextColor3 = Theme.Text
-        
-        -- Slide animation
-        tab.TabContent.Position = UDim2.new(0, 8, 0, 0)
-        TweenService:Create(tab.TabContent, TweenInfo.new(Anim.Speed, Anim.Style), {
-            Position = UDim2.new(0, 0, 0, 0)
-        }):Play()
         
         self.CurrentTab = tab
         UiLibrary.Log("Switched to " .. name .. " tab")
@@ -564,20 +587,41 @@ function Tab:CreateScriptButton(scriptData)
     runBtn.Parent = frame
     CreateCorner(runBtn, 6)
     AddHover(runBtn, Color3.fromRGB(80, 200, 150))
-    AddRipple(runBtn)
+    
+    local isExecuting = false
     
     runBtn.MouseButton1Click:Connect(function()
+        if isExecuting then return end
+        isExecuting = true
+        
+        -- Visual feedback
+        runBtn.Text = "⏳"
+        runBtn.BackgroundColor3 = Theme.Warning
+        
         UiLibrary.Log("Executing " .. scriptData.name .. "...", "warning")
         
-        local success, error = pcall(function()
-            loadstring(scriptData.code)()
+        spawn(function()
+            local success, error = pcall(function()
+                loadstring(scriptData.code)()
+            end)
+            
+            wait(0.5) -- Minimum execution time for visual feedback
+            
+            if success then
+                UiLibrary.Log(scriptData.name .. " executed successfully!", "success")
+                runBtn.Text = "✓"
+                runBtn.BackgroundColor3 = Theme.Success
+            else
+                UiLibrary.Log("Error executing " .. scriptData.name .. ": " .. tostring(error), "error")
+                runBtn.Text = "✗"
+                runBtn.BackgroundColor3 = Theme.Error
+            end
+            
+            wait(1)
+            runBtn.Text = "▶"
+            runBtn.BackgroundColor3 = Theme.Success
+            isExecuting = false
         end)
-        
-        if success then
-            UiLibrary.Log(scriptData.name .. " executed successfully!", "success")
-        else
-            UiLibrary.Log("Error executing " .. scriptData.name .. ": " .. tostring(error), "error")
-        end
     end)
     
     return frame
@@ -732,7 +776,11 @@ function UiLibrary.CreateExampleWindow()
     return Window
 end
 
--- Initialize
-UiLibrary.Log("OwlHub UI Library loaded", "success")
+-- Auto-initialize the GUI
+spawn(function()
+    wait(0.1) -- Small delay to ensure everything loads
+    UiLibrary.CreateExampleWindow()
+    UiLibrary.Log("OwlHub UI Library loaded", "success")
+end)
 
 return UiLibrary
